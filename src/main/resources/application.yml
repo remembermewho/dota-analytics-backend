@@ -15,4 +15,11 @@ spring:
 
 opendota:
   sync:
-    enabled: false
+    enabled: true
+    league-ids: 19101
+    initial-delay-ms: 5000
+    fixed-delay-ms: 600000
+    force-reload: false
+
+  rate-limit:
+    requests-per-minute: 50

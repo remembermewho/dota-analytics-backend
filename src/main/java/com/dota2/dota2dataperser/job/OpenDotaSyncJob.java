@@ -35,9 +35,6 @@ public class OpenDotaSyncJob {
     @Value("${opendota.sync.league-ids:}")
     private String leagueIdsRaw;
 
-    @Value("${opendota.sync.delay-between-match-requests-ms:1200}")
-    private long delayBetweenMatchRequestsMs;
-
     @Value("${opendota.sync.force-reload:false}")
     private boolean forceReload;
 
@@ -112,7 +109,6 @@ public class OpenDotaSyncJob {
                     log.warn("Match ingestion failed. matchId={}, error={}", matchId, result.error());
                 }
 
-                sleepBetweenRequests();
             }
 
             log.info("League sync finished. leagueId={}", leagueId);
@@ -134,15 +130,4 @@ public class OpenDotaSyncJob {
                 .toList();
     }
 
-    private void sleepBetweenRequests() {
-        if (delayBetweenMatchRequestsMs <= 0) {
-            return;
-        }
-
-        try {
-            Thread.sleep(delayBetweenMatchRequestsMs);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
 }
