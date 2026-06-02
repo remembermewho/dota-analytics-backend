@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import com.dota2.dota2dataperser.exception.OpenDotaDailyLimitExceededException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -55,17 +56,22 @@ public class OpenDotaSyncJob {
             fixedDelayString = "${opendota.sync.fixed-delay-ms:600000}"
     )
     public void sync() {
-        List<Long> leagueIds = parseLeagueIds();
+        try {
+            List<Long> leagueIds = parseLeagueIds();
 
-        if (leagueIds.isEmpty()) {
-            log.warn("OpenDota sync skipped: no league ids configured");
-            return;
-        }
+            if (leagueIds.isEmpty()) {
+                log.warn("OpenDota sync skipped: no league ids configured");
+                return;
+            }
 
-        syncReferenceDataOnce();
+            syncReferenceDataOnce();
 
-        for (Long leagueId : leagueIds) {
-            syncLeague(leagueId);
+            for (Long leagueId : leagueIds) {
+                syncLeague(leagueId);
+            }
+
+        } catch (OpenDotaDailyLimitExceededException e) {
+            log.warn("OpenDota sync stopped: daily request limit reached. message={}", e.getMessage());
         }
     }
 
@@ -108,10 +114,12 @@ public class OpenDotaSyncJob {
                 } else {
                     log.warn("Match ingestion failed. matchId={}, error={}", matchId, result.error());
                 }
-
             }
 
             log.info("League sync finished. leagueId={}", leagueId);
+
+        } catch (OpenDotaDailyLimitExceededException e) {
+            throw e;
 
         } catch (Exception e) {
             log.error("League sync failed. leagueId={}", leagueId, e);

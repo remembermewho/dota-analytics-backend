@@ -3,6 +3,7 @@ package com.dota2.dota2dataperser.service;
 import com.dota2.dota2dataperser.client.OpenDotaClient;
 import com.dota2.dota2dataperser.dto.opendota.OpenDotaMatchDto;
 import org.springframework.stereotype.Service;
+import com.dota2.dota2dataperser.exception.OpenDotaDailyLimitExceededException;
 
 @Service
 public class MatchIngestionService { // Главный сервис для загрузки одного матча
@@ -46,7 +47,10 @@ public class MatchIngestionService { // Главный сервис для за�
 
             return IngestionResult.success(matchId);
 
-        } catch (Exception e) {
+        } catch (OpenDotaDailyLimitExceededException e) {
+            throw e;
+        }
+        catch (Exception e) {
             rawMatchService.markError(matchId, e.getMessage());
 
             return IngestionResult.failed(matchId, e.getMessage());

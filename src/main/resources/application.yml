@@ -23,3 +23,5 @@ opendota:
 
   rate-limit:
     requests-per-minute: 50
+    requests-per-day: 3000
+    zone-id: UTC
