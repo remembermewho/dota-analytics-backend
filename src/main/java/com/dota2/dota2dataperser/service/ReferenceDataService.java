@@ -1,10 +1,6 @@
 package com.dota2.dota2dataperser.service;
 
-import com.dota2.dota2dataperser.dto.opendota.OpenDotaHeroDto;
-import com.dota2.dota2dataperser.dto.opendota.OpenDotaLeagueDto;
-import com.dota2.dota2dataperser.dto.opendota.OpenDotaMatchDto;
-import com.dota2.dota2dataperser.dto.opendota.OpenDotaPlayerDto;
-import com.dota2.dota2dataperser.dto.opendota.OpenDotaTeamDto;
+import com.dota2.dota2dataperser.dto.opendota.*;
 import com.dota2.dota2dataperser.entity.*;
 import com.dota2.dota2dataperser.mapper.HeroMapper;
 import com.dota2.dota2dataperser.mapper.PatchMapper;
@@ -241,6 +237,44 @@ public class ReferenceDataService {
             entity.setLocalizedName("Unknown hero " + heroId);
 
             heroRepository.save(entity);
+        }
+    }
+
+    @Transactional
+    public void saveProPlayers(List<OpenDotaProPlayerDto> proPlayers) {
+        if (proPlayers == null) {
+            return;
+        }
+
+        for (OpenDotaProPlayerDto dto : proPlayers) {
+            if (dto == null || dto.getAccountId() == null) {
+                continue;
+            }
+
+            PlayerEntity entity = playerRepository
+                    .findByAccountId(dto.getAccountId())
+                    .orElseGet(PlayerEntity::new);
+
+            entity.setAccountId(dto.getAccountId());
+
+            if (dto.getPersonaName() != null && !dto.getPersonaName().isBlank()) {
+                entity.setNickname(dto.getPersonaName());
+            }
+
+            if (dto.getName() != null && !dto.getName().isBlank()) {
+                entity.setProNickname(dto.getName());
+            }
+
+            if (dto.getCountryCode() != null && !dto.getCountryCode().isBlank()) {
+                entity.setCountry(dto.getCountryCode());
+            }
+
+            entity.setProTeamId(dto.getTeamId());
+            entity.setProTeamName(dto.getTeamName());
+            entity.setProTeamTag(dto.getTeamTag());
+            entity.setIsPro(Boolean.TRUE.equals(dto.getIsPro()));
+
+            playerRepository.save(entity);
         }
     }
 }

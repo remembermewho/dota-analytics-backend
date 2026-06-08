@@ -1,9 +1,6 @@
 package com.dota2.dota2dataperser.job;
 
-import com.dota2.dota2dataperser.service.HeroIngestionService;
-import com.dota2.dota2dataperser.service.LeagueMatchDiscoveryService;
-import com.dota2.dota2dataperser.service.MatchIngestionService;
-import com.dota2.dota2dataperser.service.TournamentIngestionService;
+import com.dota2.dota2dataperser.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +27,7 @@ public class OpenDotaSyncJob {
     private final HeroIngestionService heroIngestionService;
     private final LeagueMatchDiscoveryService leagueMatchDiscoveryService;
     private final MatchIngestionService matchIngestionService;
-
+    private final ProPlayerIngestionService proPlayerIngestionService;
     private final AtomicBoolean referenceDataSynced = new AtomicBoolean(false);
 
     @Value("${opendota.sync.league-ids:}")
@@ -43,12 +40,13 @@ public class OpenDotaSyncJob {
             TournamentIngestionService tournamentIngestionService,
             HeroIngestionService heroIngestionService,
             LeagueMatchDiscoveryService leagueMatchDiscoveryService,
-            MatchIngestionService matchIngestionService
+            MatchIngestionService matchIngestionService, ProPlayerIngestionService proPlayerIngestionService
     ) {
         this.tournamentIngestionService = tournamentIngestionService;
         this.heroIngestionService = heroIngestionService;
         this.leagueMatchDiscoveryService = leagueMatchDiscoveryService;
         this.matchIngestionService = matchIngestionService;
+        this.proPlayerIngestionService = proPlayerIngestionService;
     }
 
     @Scheduled(
@@ -85,6 +83,13 @@ public class OpenDotaSyncJob {
             log.info("OpenDota heroes synced. count={}", heroesCount);
         } catch (Exception e) {
             log.error("Failed to sync heroes", e);
+        }
+
+        try {
+            int proPlayersCount = proPlayerIngestionService.syncProPlayers();
+            log.info("OpenDota pro players synced. count={}", proPlayersCount);
+        } catch (Exception e) {
+            log.error("Failed to sync pro players", e);
         }
 
         try {

@@ -135,9 +135,21 @@ public class MatchPageService {
 
         String teamSide = resolveTeamSide(entity.getIsRadiant());
 
+        String nickname = player != null ? player.getNickname() : null;
+        String proNickname = player != null ? player.getProNickname() : null;
+
+        String displayName = resolveDisplayName(
+                entity.getAccountId(),
+                proNickname,
+                nickname
+        );
+
         return new MatchPlayerResponse(
                 entity.getAccountId(),
-                player != null ? player.getNickname() : "Unknown player " + entity.getAccountId(),
+
+                displayName,
+                nickname,
+                proNickname,
 
                 entity.getTeamId(),
                 team != null ? team.getName() : null,
@@ -162,6 +174,22 @@ public class MatchPageService {
                 entity.getDenies(),
                 entity.getLevel()
         );
+    }
+
+    private String resolveDisplayName(
+            Long accountId,
+            String proNickname,
+            String nickname
+    ) {
+        if (proNickname != null && !proNickname.isBlank()) {
+            return proNickname;
+        }
+
+        if (nickname != null && !nickname.isBlank()) {
+            return nickname;
+        }
+
+        return "Unknown player " + accountId;
     }
 
     private MatchTimelinePointResponse toTimelineResponse(MatchAdvantageTimelineEntity entity) {

@@ -1,9 +1,6 @@
 package com.dota2.dota2dataperser.service;
 
-import com.dota2.dota2dataperser.dto.opendota.OpenDotaHeroDto;
-import com.dota2.dota2dataperser.dto.opendota.OpenDotaLeagueDto;
-import com.dota2.dota2dataperser.dto.opendota.OpenDotaLeagueMatchDto;
-import com.dota2.dota2dataperser.dto.opendota.OpenDotaMatchDto;
+import com.dota2.dota2dataperser.dto.opendota.*;
 import com.dota2.dota2dataperser.exception.ParsingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,6 +55,17 @@ public class MatchParserService {
             );
         } catch (Exception e) {
             throw new ParsingException("Failed to parse OpenDota heroes JSON", e);
+        }
+    }
+
+    public List<OpenDotaProPlayerDto> parseProPlayersJson(String json) {
+        try {
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<List<OpenDotaProPlayerDto>>() {}
+            );
+        } catch (Exception e) {
+            throw new ParsingException("Failed to parse OpenDota pro players JSON", e);
         }
     }
 }

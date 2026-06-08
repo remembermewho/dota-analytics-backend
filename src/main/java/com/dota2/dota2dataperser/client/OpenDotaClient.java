@@ -47,4 +47,8 @@ public class OpenDotaClient {
             throw new OpenDotaApiException("OpenDota API request failed. uri=" + uri, e);
         }
     }
+
+    public String getProPlayersRawJson() {
+        return getRawJson("/proPlayers");
+    }
 }
