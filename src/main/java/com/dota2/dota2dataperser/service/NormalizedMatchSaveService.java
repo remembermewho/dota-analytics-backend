@@ -4,18 +4,17 @@ import com.dota2.dota2dataperser.dto.opendota.OpenDotaMatchDto;
 import com.dota2.dota2dataperser.dto.opendota.OpenDotaPickBanDto;
 import com.dota2.dota2dataperser.dto.opendota.OpenDotaPlayerDto;
 import com.dota2.dota2dataperser.entity.MatchAdvantageTimelineEntity;
+import com.dota2.dota2dataperser.entity.MatchEventEntity;
 import com.dota2.dota2dataperser.entity.PickBanEntity;
 import com.dota2.dota2dataperser.entity.PlayerMatchStatsEntity;
 import com.dota2.dota2dataperser.mapper.MatchMapper;
 import com.dota2.dota2dataperser.mapper.PickBanMapper;
 import com.dota2.dota2dataperser.mapper.PlayerMapper;
 import com.dota2.dota2dataperser.mapper.TimelineMapper;
-import com.dota2.dota2dataperser.repository.MatchAdvantageTimelineRepository;
-import com.dota2.dota2dataperser.repository.MatchRepository;
-import com.dota2.dota2dataperser.repository.PickBanRepository;
-import com.dota2.dota2dataperser.repository.PlayerMatchStatsRepository;
+import com.dota2.dota2dataperser.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +28,9 @@ public class NormalizedMatchSaveService {
     private final PlayerMatchStatsRepository playerMatchStatsRepository;
     private final PickBanRepository pickBanRepository;
     private final MatchAdvantageTimelineRepository timelineRepository;
+    private final MatchEventRepository matchEventRepository;
+    private final MatchEventParserService matchEventParserService;
+    private final EntityManager entityManager;
 
     private final MatchMapper matchMapper;
     private final PlayerMapper playerMapper;
@@ -40,7 +42,7 @@ public class NormalizedMatchSaveService {
             MatchRepository matchRepository,
             PlayerMatchStatsRepository playerMatchStatsRepository,
             PickBanRepository pickBanRepository,
-            MatchAdvantageTimelineRepository timelineRepository,
+            MatchAdvantageTimelineRepository timelineRepository, MatchEventRepository matchEventRepository, MatchEventParserService matchEventParserService, EntityManager entityManager,
             MatchMapper matchMapper,
             PlayerMapper playerMapper,
             PickBanMapper pickBanMapper,
@@ -51,6 +53,9 @@ public class NormalizedMatchSaveService {
         this.playerMatchStatsRepository = playerMatchStatsRepository;
         this.pickBanRepository = pickBanRepository;
         this.timelineRepository = timelineRepository;
+        this.matchEventRepository = matchEventRepository;
+        this.matchEventParserService = matchEventParserService;
+        this.entityManager = entityManager;
         this.matchMapper = matchMapper;
         this.playerMapper = playerMapper;
         this.pickBanMapper = pickBanMapper;
@@ -58,22 +63,45 @@ public class NormalizedMatchSaveService {
     }
 
     @Transactional
-    public void saveNormalizedMatch(OpenDotaMatchDto dto) {
+    public void saveNormalizedMatch(OpenDotaMatchDto dto, String rawJson) {
         validate(dto);
 
         Long matchId = dto.getMatchId();
 
         referenceDataService.saveReferencesFromMatch(dto);
 
-        matchRepository.save(matchMapper.toEntity(dto));
+        deleteOldMatchDetails(matchId);
 
-        playerMatchStatsRepository.deleteByMatchId(matchId);
-        pickBanRepository.deleteByMatchId(matchId);
-        timelineRepository.deleteByMatchId(matchId);
+        matchRepository.save(matchMapper.toEntity(dto));
 
         savePlayerMatchStats(dto);
         savePicksBans(dto);
         saveTimeline(dto);
+        saveEvents(dto, rawJson);
+    }
+
+    private void deleteOldMatchDetails(Long matchId) {
+        playerMatchStatsRepository.deleteByMatchId(matchId);
+        pickBanRepository.deleteByMatchId(matchId);
+        timelineRepository.deleteByMatchId(matchId);
+        matchEventRepository.deleteByMatchId(matchId);
+
+        entityManager.flush();
+    }
+
+    private void saveEvents(OpenDotaMatchDto dto, String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return;
+        }
+
+        List<MatchEventEntity> events =
+                matchEventParserService.parseEvents(dto, rawJson);
+
+        if (events.isEmpty()) {
+            return;
+        }
+
+        matchEventRepository.saveAll(events);
     }
 
     private void savePlayerMatchStats(OpenDotaMatchDto dto) {

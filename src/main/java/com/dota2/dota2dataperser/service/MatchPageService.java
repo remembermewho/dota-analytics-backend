@@ -19,6 +19,7 @@ public class MatchPageService {
     private final PlayerMatchStatsRepository playerMatchStatsRepository;
     private final PickBanRepository pickBanRepository;
     private final MatchAdvantageTimelineRepository timelineRepository;
+    private final MatchEventRepository matchEventRepository;
 
     public MatchPageService(
             MatchRepository matchRepository,
@@ -28,7 +29,7 @@ public class MatchPageService {
             HeroRepository heroRepository,
             PlayerMatchStatsRepository playerMatchStatsRepository,
             PickBanRepository pickBanRepository,
-            MatchAdvantageTimelineRepository timelineRepository
+            MatchAdvantageTimelineRepository timelineRepository, MatchEventRepository matchEventRepository
     ) {
         this.matchRepository = matchRepository;
         this.tournamentRepository = tournamentRepository;
@@ -38,6 +39,7 @@ public class MatchPageService {
         this.playerMatchStatsRepository = playerMatchStatsRepository;
         this.pickBanRepository = pickBanRepository;
         this.timelineRepository = timelineRepository;
+        this.matchEventRepository = matchEventRepository;
     }
 
     @Transactional(readOnly = true)
@@ -63,6 +65,12 @@ public class MatchPageService {
                 match.getDireScore(),
                 Boolean.FALSE.equals(match.getRadiantWin())
         );
+
+        List<MatchEventResponse> events =
+                matchEventRepository.findByMatchIdOrderByEventTimeSecondsAsc(matchId)
+                        .stream()
+                        .map(this::toEventResponse)
+                        .toList();
 
         List<PickBanEntity> draftEntries =
                 pickBanRepository.findByMatchIdOrderByOrderNumAsc(matchId);
@@ -109,7 +117,7 @@ public class MatchPageService {
 
                 timeline,
 
-                List.of()
+                events
         );
     }
 
@@ -125,6 +133,36 @@ public class MatchPageService {
                 entity.getHeroId(),
                 hero != null ? hero.getLocalizedName() : "Unknown hero " + entity.getHeroId(),
                 entity.getIsPick()
+        );
+    }
+
+    private MatchEventResponse toEventResponse(MatchEventEntity entity) {
+        TeamEntity team = findTeam(entity.getTeamId());
+        PlayerEntity player = findPlayer(entity.getAccountId());
+        HeroEntity hero = findHero(entity.getHeroId());
+
+        String playerName = null;
+
+        if (player != null) {
+            playerName = resolveDisplayName(
+                    player.getAccountId(),
+                    player.getProNickname(),
+                    player.getNickname()
+            );
+        }
+
+        return new MatchEventResponse(
+                entity.getEventTimeSeconds(),
+                entity.getEventTimeMinSec(),
+                entity.getEventType(),
+                entity.getTeamSide(),
+                entity.getTeamId(),
+                team != null ? team.getName() : null,
+                entity.getAccountId(),
+                playerName,
+                entity.getHeroId(),
+                hero != null ? hero.getLocalizedName() : null,
+                entity.getDescription()
         );
     }
 

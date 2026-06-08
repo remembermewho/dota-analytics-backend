@@ -41,7 +41,7 @@ public class MatchIngestionService { // Главный сервис для за�
 
             OpenDotaMatchDto dto = matchParserService.parseMatchJson(rawJson);
 
-            normalizedMatchSaveService.saveNormalizedMatch(dto);
+            normalizedMatchSaveService.saveNormalizedMatch(dto, rawJson);
 
             rawMatchService.markParsed(matchId);
 
@@ -65,7 +65,7 @@ public class MatchIngestionService { // Главный сервис для за�
 
             OpenDotaMatchDto dto = matchParserService.parseMatchJson(rawJson);
 
-            normalizedMatchSaveService.saveNormalizedMatch(dto);
+            normalizedMatchSaveService.saveNormalizedMatch(dto, rawJson);
 
             rawMatchService.markParsed(matchId);
 
